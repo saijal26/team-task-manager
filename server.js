@@ -7,11 +7,20 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Serve frontend
-app.use(express.static(__dirname));
 
-// Connect DB
-const db = new sqlite3.Database("./database.db");
+app.use(express.static(path.join(__dirname)));
+
+
+app.get("/", (req, res) => {
+  res.send("Server is running");
+});
+
+// Connect DB 
+const db = new sqlite3.Database(process.env.DB_PATH || "./database.db");
+
+db.on("error", (err) => {
+  console.error("Database error:", err);
+});
 
 // Create Tables
 db.serialize(() => {
@@ -39,8 +48,6 @@ db.serialize(() => {
     )
   `);
 });
-
-
 
 // Signup
 app.post("/signup", (req, res) => {
@@ -73,7 +80,6 @@ app.post("/login", (req, res) => {
   );
 });
 
-
 // Create Project
 app.post("/projects", (req, res) => {
   const { name } = req.body;
@@ -95,7 +101,6 @@ app.get("/projects", (req, res) => {
     res.json(rows);
   });
 });
-
 
 // Create Task
 app.post("/tasks", (req, res) => {
@@ -132,7 +137,6 @@ app.put("/tasks/:id", (req, res) => {
     }
   );
 });
-
 
 
 const PORT = process.env.PORT || 3000;
