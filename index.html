@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Task Manager</title>
+  <style>
+    body { font-family: Arial; background: #f4f6f8; margin: 0; }
+
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      margin: 20px auto;
+      width: 300px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 90%;
+      padding: 8px;
+      margin: 5px;
+    }
+
+    button {
+      padding: 10px;
+      width: 95%;
+      margin-top: 10px;
+      background: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    #dashboard {
+      display: none;
+      padding: 20px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: #ecf0f1;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>🚀 Team Task Manager</header>
+
+<!-- AUTH -->
+<div id="authPage" class="card">
+  <h2>Login / Signup</h2>
+  <input id="username" placeholder="Username" />
+  <input id="password" type="password" placeholder="Password" />
+  <button onclick="signup()">Signup</button>
+  <button onclick="login()">Login</button>
+  <p id="msg"></p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+  <div class="card">
+    <h2>Create Project</h2>
+    <input id="projectName" placeholder="Project Name" />
+    <button onclick="createProject()">Create</button>
+  </div>
+
+  <div class="card">
+    <h2>Create Task</h2>
+    <input id="taskTitle" placeholder="Task Title" />
+    <input id="projectId" placeholder="Project ID" />
+    <button onclick="createTask()">Add Task</button>
+  </div>
+
+  <div class="card">
+    <h3>Projects</h3>
+    <ul id="projects"></ul>
+  </div>
+
+  <div class="card">
+    <h3>Tasks</h3>
+    <ul id="tasks"></ul>
+  </div>
+
+</div>
+
+<script>
+const API = "";
+
+// Show dashboard
+function showDashboard() {
+  document.getElementById("authPage").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+  loadProjects();
+  loadTasks();
+}
+
+// Signup
+async function signup() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  await fetch("/signup", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username, password })
+  });
+
+  document.getElementById("msg").innerText = "Signup successful!";
+}
+
+// Login
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    showDashboard();   
+  } else {
+    document.getElementById("msg").innerText = data.message;
+  }
+}
+
+// Project
+async function createProject() {
+  const name = document.getElementById("projectName").value;
+
+  await fetch("/projects", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ name })
+  });
+
+  loadProjects();
+}
+
+// Task
+async function createTask() {
+  const title = document.getElementById("taskTitle").value;
+  const project_id = document.getElementById("projectId").value;
+
+  await fetch("/tasks", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ title, project_id })
+  });
+
+  loadTasks();
+}
+
+// Load Data
+async function loadProjects() {
+  const res = await fetch("/projects");
+  const data = await res.json();
+  document.getElementById("projects").innerHTML =
+    data.map(p => `<li>${p.id} - ${p.name}</li>`).join("");
+}
+
+async function loadTasks() {
+  const res = await fetch("/tasks");
+  const data = await res.json();
+  document.getElementById("tasks").innerHTML =
+    data.map(t => `<li>${t.title} (${t.status})</li>`).join("");
+}
+</script>
+
+</body>
+</html>
