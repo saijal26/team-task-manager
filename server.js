@@ -2,27 +2,29 @@ const express = require("express");
 const Database = require("better-sqlite3");
 const cors = require("cors");
 const path = require("path");
+const bcrypt = require("bcrypt");
 
 const app = express();
+
 app.use(express.json());
 app.use(cors());
 
 
 app.use(express.static(path.join(__dirname)));
 
-
 app.get("/", (req, res) => {
   res.send("Server is running");
 });
 
-
+// Database
 const db = new Database("database.db");
 
-// Create Tables
+
+
 db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT,
+    username TEXT UNIQUE,
     password TEXT
   )
 `).run();
@@ -43,34 +45,47 @@ db.prepare(`
   )
 `).run();
 
-// Signup
-app.post("/signup", (req, res) => {
+
+app.post("/signup", async (req, res) => {
   const { username, password } = req.body;
 
-  const stmt = db.prepare(
-    "INSERT INTO users(username, password) VALUES (?, ?)"
-  );
-  stmt.run(username, password);
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  res.json({ message: "User created" });
+    db.prepare("INSERT INTO users(username, password) VALUES (?, ?)")
+      .run(username, hashedPassword);
+
+    res.json({ message: "User created" });
+
+  } catch (err) {
+    res.status(500).json({ error: "User already exists or error occurred" });
+  }
 });
 
-// Login
-app.post("/login", (req, res) => {
+// LOGIN
+app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   const user = db
-    .prepare("SELECT * FROM users WHERE username = ? AND password = ?")
-    .get(username, password);
+    .prepare("SELECT * FROM users WHERE username = ?")
+    .get(username);
 
   if (!user) {
+    return res.json({ success: false, message: "Invalid credentials" });
+  }
+
+  const match = await bcrypt.compare(password, user.password);
+
+  if (!match) {
     return res.json({ success: false, message: "Invalid credentials" });
   }
 
   res.json({ success: true, user });
 });
 
-// Create Project
+
+
+// CREATE PROJECT
 app.post("/projects", (req, res) => {
   const { name } = req.body;
 
@@ -81,13 +96,25 @@ app.post("/projects", (req, res) => {
   res.json({ id: result.lastInsertRowid });
 });
 
-// Get Projects
+// GET PROJECTS
 app.get("/projects", (req, res) => {
   const rows = db.prepare("SELECT * FROM projects").all();
   res.json(rows);
 });
 
-// Create Task
+
+app.delete("/projects/:id", (req, res) => {
+  const id = req.params.id;
+
+  db.prepare("DELETE FROM tasks WHERE project_id = ?").run(id);
+  db.prepare("DELETE FROM projects WHERE id = ?").run(id);
+
+  res.json({ message: "Project and related tasks deleted" });
+});
+
+
+
+// CREATE TASK
 app.post("/tasks", (req, res) => {
   const { title, project_id } = req.body;
 
@@ -100,23 +127,31 @@ app.post("/tasks", (req, res) => {
   res.json({ id: result.lastInsertRowid });
 });
 
-// Get Tasks
+// GET TASKS
 app.get("/tasks", (req, res) => {
   const rows = db.prepare("SELECT * FROM tasks").all();
   res.json(rows);
 });
 
-// Update Task
+
 app.put("/tasks/:id", (req, res) => {
   const { status } = req.body;
 
-  db.prepare("UPDATE tasks SET status = ? WHERE id = ?").run(
-    status,
-    req.params.id
-  );
+  db.prepare("UPDATE tasks SET status = ? WHERE id = ?")
+    .run(status, req.params.id);
 
   res.json({ message: "Task updated" });
 });
+
+// DELETE TASK
+app.delete("/tasks/:id", (req, res) => {
+  db.prepare("DELETE FROM tasks WHERE id = ?")
+    .run(req.params.id);
+
+  res.json({ message: "Task deleted" });
+});
+
+
 
 const PORT = process.env.PORT || 3000;
 

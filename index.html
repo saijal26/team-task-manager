@@ -1,50 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Task Manager</title>
+  <title>Team Task Manager</title>
+
   <style>
-    body { font-family: Arial; background: #f4f6f8; margin: 0; }
+    body {
+      font-family: Arial;
+      margin: 0;
+      background: #eef2f7;
+    }
 
     header {
-      background: #2c3e50;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
       color: white;
       padding: 15px;
       text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .container {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+      flex-wrap: wrap;
     }
 
     .card {
       background: white;
       padding: 20px;
-      margin: 20px auto;
-      width: 300px;
-      border-radius: 10px;
-      text-align: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
 
     input {
-      width: 90%;
-      padding: 8px;
-      margin: 5px;
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
 
     button {
+      width: 100%;
       padding: 10px;
-      width: 95%;
-      margin-top: 10px;
-      background: #3498db;
-      color: white;
       border: none;
+      border-radius: 6px;
+      background: #4facfe;
+      color: white;
       cursor: pointer;
+      font-weight: bold;
     }
 
     button:hover {
-      background: #2980b9;
-    }
-
-    #dashboard {
-      display: none;
-      padding: 20px;
+      background: #3b8de3;
     }
 
     ul {
@@ -53,10 +65,52 @@
     }
 
     li {
-      background: #ecf0f1;
-      margin: 5px 0;
+      background: #f4f6f8;
       padding: 10px;
-      border-radius: 5px;
+      margin-top: 8px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .delete-btn {
+      background: red;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .delete-btn:hover {
+      background: darkred;
+    }
+
+    .status {
+      font-size: 12px;
+      padding: 3px 6px;
+      border-radius: 4px;
+    }
+
+    .pending {
+      background: #ffeaa7;
+    }
+
+    .completed {
+      background: #55efc4;
+    }
+
+    #dashboard {
+      display: none;
+    }
+
+    .auth-box {
+      width: 300px;
+      margin: 100px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
   </style>
 </head>
@@ -66,7 +120,7 @@
 <header>🚀 Team Task Manager</header>
 
 <!-- AUTH -->
-<div id="authPage" class="card">
+<div id="authPage" class="auth-box">
   <h2>Login / Signup</h2>
   <input id="username" placeholder="Username" />
   <input id="password" type="password" placeholder="Password" />
@@ -77,36 +131,37 @@
 
 <!-- DASHBOARD -->
 <div id="dashboard">
+  <div class="container">
 
-  <div class="card">
-    <h2>Create Project</h2>
-    <input id="projectName" placeholder="Project Name" />
-    <button onclick="createProject()">Create</button>
+    <div class="card">
+      <h3>Create Project</h3>
+      <input id="projectName" placeholder="Project Name" />
+      <button onclick="createProject()">Create</button>
+    </div>
+
+    <div class="card">
+      <h3>Create Task</h3>
+      <input id="taskTitle" placeholder="Task Title" />
+      <input id="projectId" placeholder="Project ID" />
+      <button onclick="createTask()">Add Task</button>
+    </div>
+
+    <div class="card">
+      <h3>Projects</h3>
+      <ul id="projects"></ul>
+    </div>
+
+    <div class="card">
+      <h3>Tasks</h3>
+      <ul id="tasks"></ul>
+    </div>
+
   </div>
-
-  <div class="card">
-    <h2>Create Task</h2>
-    <input id="taskTitle" placeholder="Task Title" />
-    <input id="projectId" placeholder="Project ID" />
-    <button onclick="createTask()">Add Task</button>
-  </div>
-
-  <div class="card">
-    <h3>Projects</h3>
-    <ul id="projects"></ul>
-  </div>
-
-  <div class="card">
-    <h3>Tasks</h3>
-    <ul id="tasks"></ul>
-  </div>
-
 </div>
 
 <script>
-const API = "";
 
-// Show dashboard
+
 function showDashboard() {
   document.getElementById("authPage").style.display = "none";
   document.getElementById("dashboard").style.display = "block";
@@ -114,7 +169,7 @@ function showDashboard() {
   loadTasks();
 }
 
-// Signup
+// SIGNUP
 async function signup() {
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
@@ -128,7 +183,7 @@ async function signup() {
   document.getElementById("msg").innerText = "Signup successful!";
 }
 
-// Login
+// LOGIN
 async function login() {
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
@@ -142,13 +197,13 @@ async function login() {
   const data = await res.json();
 
   if (data.success) {
-    showDashboard();   
+    showDashboard();
   } else {
-    document.getElementById("msg").innerText = data.message;
+    document.getElementById("msg").innerText = "Invalid credentials";
   }
 }
 
-// Project
+// CREATE PROJECT
 async function createProject() {
   const name = document.getElementById("projectName").value;
 
@@ -161,7 +216,7 @@ async function createProject() {
   loadProjects();
 }
 
-// Task
+// CREATE TASK
 async function createTask() {
   const title = document.getElementById("taskTitle").value;
   const project_id = document.getElementById("projectId").value;
@@ -175,20 +230,47 @@ async function createTask() {
   loadTasks();
 }
 
-// Load Data
+// DELETE TASK
+async function deleteTask(id) {
+  await fetch(`/tasks/${id}`, { method: "DELETE" });
+  loadTasks();
+}
+
+// DELETE PROJECT
+async function deleteProject(id) {
+  await fetch(`/projects/${id}`, { method: "DELETE" });
+  loadProjects();
+}
+
+// LOAD PROJECTS
 async function loadProjects() {
   const res = await fetch("/projects");
   const data = await res.json();
+
   document.getElementById("projects").innerHTML =
-    data.map(p => `<li>${p.id} - ${p.name}</li>`).join("");
+    data.map(p => `
+      <li>
+        ${p.id} - ${p.name}
+        <button class="delete-btn" onclick="deleteProject(${p.id})">Delete</button>
+      </li>
+    `).join("");
 }
 
+// LOAD TASKS
 async function loadTasks() {
   const res = await fetch("/tasks");
   const data = await res.json();
+
   document.getElementById("tasks").innerHTML =
-    data.map(t => `<li>${t.title} (${t.status})</li>`).join("");
+    data.map(t => `
+      <li>
+        ${t.title}
+        <span class="status ${t.status}">${t.status}</span>
+        <button class="delete-btn" onclick="deleteTask(${t.id})">Delete</button>
+      </li>
+    `).join("");
 }
+
 </script>
 
 </body>
